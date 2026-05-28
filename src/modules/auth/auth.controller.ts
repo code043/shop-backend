@@ -4,11 +4,15 @@ import {
   Body,
   Req,
   UnauthorizedException,
+  Get,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { Request } from 'express';
+import { Auth } from 'src/decorators/auth.users.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -46,5 +50,10 @@ export class AuthController {
       access_token: result.access_token,
       refresh_token: result.refresh_token,
     };
+  }
+  @UseGuards(AuthGuard('jwt'))
+  @Get('me')
+  getMe(@Auth('id') id: string) {
+    return this.authService.getAuthenticatedUser(id);
   }
 }

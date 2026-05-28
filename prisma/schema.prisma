@@ -33,6 +33,8 @@ model User {
   password String
   role     Role   @default(USER)
 
+  refreshToken String?
+
   orders Order[]
 
   createdAt DateTime @default(now()) @map("created_at")

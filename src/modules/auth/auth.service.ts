@@ -70,9 +70,81 @@ export class AuthService {
       expiresIn: process.env.JWT_ACCESS_EXPIRES as StringValue,
     });
 
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: process.env.JWT_REFRESH_EXPIRES as StringValue,
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken,
+      },
+    });
+
     return {
       user: user.id,
       access_token: accessToken,
+      refresh_token: refreshToken,
+    };
+  }
+  async refreshToken(refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token!');
+    }
+
+    let payload;
+
+    try {
+      payload = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token!');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user || user.refreshToken !== refreshToken) {
+      throw new UnauthorizedException('Refresh token mismatch!');
+    }
+
+    const newAccessToken = this.jwtService.sign(
+      {
+        sub: user.id,
+        role: user.role,
+        jti: crypto.randomUUID(),
+      },
+      {
+        secret: process.env.JWT_ACCESS_SECRET,
+        expiresIn: process.env.JWT_ACCESS_EXPIRES as StringValue,
+      },
+    );
+
+    const newRefreshToken = this.jwtService.sign(
+      {
+        sub: user.id,
+        role: user.role,
+        jti: crypto.randomUUID(),
+      },
+      {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: process.env.JWT_REFRESH_EXPIRES as StringValue,
+      },
+    );
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken: newRefreshToken,
+      },
+    });
+
+    return {
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
     };
   }
 }

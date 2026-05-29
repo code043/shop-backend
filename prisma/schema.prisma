@@ -74,10 +74,41 @@ model Product {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt() @map("updated_at")
 
+  cartItems  CartItem[]
   orderItems OrderItem[]
 
   @@index([slug])
   @@index([categoryId])
+}
+
+// ==========================
+// CART
+// ==========================
+model Cart {
+  id     String  @id @default(cuid())
+  userId String? @map("user_id")
+
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+}
+
+// ==========================
+// CART ITEM
+// ==========================
+model CartItem {
+  id String @id @default(cuid())
+
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity Int
+
+  @@unique([cartId, productId])
 }
 
 // ==========================

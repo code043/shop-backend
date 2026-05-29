@@ -79,4 +79,68 @@ export class OrderService {
       },
     });
   }
+  async findOne(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new BadRequestException('Order not found');
+    }
+
+    return order;
+  }
+  async markAsProcessing(orderId: string) {
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'PROCESSING',
+      },
+    });
+  }
+  async markAsPaid(orderId: string) {
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'PAID',
+      },
+    });
+  }
+  async cancel(orderId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+
+      if (!order) {
+        throw new BadRequestException('Order not found');
+      }
+
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
+
+      return tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'CANCELED',
+        },
+      });
+    });
+  }
 }

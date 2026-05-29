@@ -27,7 +27,7 @@ export class CreateProductDto {
   @IsString()
   slug!: string;
 
-  @IsString()
+  @IsNotEmpty()
   stock!: number;
 
   @IsBoolean()

@@ -6,7 +6,9 @@ export class CartService {
   constructor(private prisma: PrismaService) {}
 
   async getOrCreateCart(userId: string) {
-    let cart = await this.prisma.cart.findFirst();
+    let cart = await this.prisma.cart.findUnique({
+      where: { userId },
+    });
 
     if (!cart) {
       cart = await this.prisma.cart.create({

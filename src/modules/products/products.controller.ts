@@ -15,9 +15,13 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(+id);
+  @Get('id/:id')
+  findOneById(@Param('id') id: string) {
+    return this.productsService.findOneById(id);
+  }
+  @Get('slug/:slug')
+  findOneBySlug(@Param('slug') slug: string) {
+    return this.productsService.findOneBySlug(slug);
   }
 
   @Delete(':id')

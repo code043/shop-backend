@@ -5,20 +5,20 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class CartService {
   constructor(private prisma: PrismaService) {}
 
-  async getOrCreateCart() {
+  async getOrCreateCart(userId: string) {
     let cart = await this.prisma.cart.findFirst();
 
     if (!cart) {
       cart = await this.prisma.cart.create({
-        data: {},
+        data: { userId },
       });
     }
 
     return cart;
   }
 
-  async addToCart(productId: string, quantity: number) {
-    const cart = await this.getOrCreateCart();
+  async addToCart(productId: string, quantity: number, userId: string) {
+    const cart = await this.getOrCreateCart(userId);
 
     return this.prisma.cartItem.upsert({
       where: {
@@ -40,8 +40,8 @@ export class CartService {
     });
   }
 
-  async getCart() {
-    const cart = await this.getOrCreateCart();
+  async getCart(userId: string) {
+    const cart = await this.getOrCreateCart(userId);
 
     return this.prisma.cart.findUnique({
       where: { id: cart.id },
@@ -55,8 +55,8 @@ export class CartService {
     });
   }
 
-  async removeItem(productId: string) {
-    const cart = await this.getOrCreateCart();
+  async removeItem(productId: string, userId: string) {
+    const cart = await this.getOrCreateCart(userId);
 
     return this.prisma.cartItem.delete({
       where: {

@@ -1,26 +1,42 @@
-import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderService } from '../order/order.service';
 import { Injectable } from '@nestjs/common';
+import Stripe from 'stripe';
 
 @Injectable()
 export class PaymentService {
-  constructor(
-    private prisma: PrismaService,
-    private orderService: OrderService,
-  ) {}
+  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2026-05-27.dahlia',
+  });
+
+  constructor(private orderService: OrderService) {}
 
   async createCheckout(orderId: string) {
     const order = await this.orderService.findOne(orderId);
 
-    if (order.status !== 'PENDING') {
-      throw new Error('Order is not available for payment');
-    }
+    const session = await this.stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
 
-    await this.orderService.markAsProcessing(orderId);
+      line_items: order.items.map((item) => ({
+        price_data: {
+          currency: 'brl',
+          product_data: {
+            name: item.product.name,
+          },
+          unit_amount: item.price,
+        },
+        quantity: item.quantity,
+      })),
 
-    return {
-      url: `http://localhost:8080/payment/${orderId}`, // fake
-    };
+      metadata: {
+        orderId,
+      },
+
+      success_url: 'http://localhost:3000/success',
+      cancel_url: 'http://localhost:3000/cancel',
+    });
+
+    return { url: session.url };
   }
 
   async handleWebhook(event: any) {

@@ -1,10 +1,10 @@
 import { OrderService } from '../order/order.service';
 import { Injectable } from '@nestjs/common';
-import Stripe from 'stripe';
+import * as Stripe from 'stripe';
 
 @Injectable()
 export class PaymentService {
-  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  private stripe = new (Stripe as any)(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2026-05-27.dahlia',
   });
 

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, UseGuards, Param } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { Auth } from 'src/decorators/auth.users.decorator';
 import { JwtAuthGuard } from 'src/guards/jwt.auth.guard';
@@ -15,5 +15,10 @@ export class OrderController {
   @Get()
   findAll() {
     return this.orderService.findAll();
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  findOne(@Param('id') id: string, @Auth('id') userId: string) {
+    return this.orderService.findOne(id, userId);
   }
 }

@@ -1,3 +1,4 @@
+import * as express from 'express';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -12,6 +13,13 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
+    }),
+  );
+  app.use(
+    express.json({
+      verify: (req: any, res, buf) => {
+        req.rawBody = buf;
+      },
     }),
   );
   await app.listen(8080);

@@ -1,18 +1,25 @@
-import { OrderService } from '../order/order.service';
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import * as Stripe from 'stripe';
+
+type OrderWithItems = {
+  id: string;
+  items: {
+    price: number;
+    quantity: number;
+    product: { name: string };
+  }[];
+};
 
 @Injectable()
 export class PaymentService {
   private stripe = new (Stripe as any)(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2026-05-27.dahlia',
-  });
+  }) as Stripe.Stripe;
 
-  constructor(private orderService: OrderService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async createCheckout(orderId: string) {
-    const order = await this.orderService.findOne(orderId);
-
+  async createCheckout(order: OrderWithItems) {
     const session = await this.stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -29,7 +36,7 @@ export class PaymentService {
       })),
 
       metadata: {
-        orderId,
+        orderId: order.id,
       },
 
       success_url: 'http://localhost:3000/success',
@@ -40,20 +47,25 @@ export class PaymentService {
   }
 
   async handleWebhook(event: any) {
-    if (!event || !event.type) return;
+    if (!event || !event.type) {
+      return;
+    }
 
-    if (event.type === 'payment.success') {
-      const orderId = event.data?.orderId;
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
 
-      if (!orderId) return;
+      const orderId = session.metadata?.orderId;
 
-      const order = await this.orderService.findOne(orderId);
-
-      if (order.status === 'PAID') {
+      if (!orderId) {
         return;
       }
 
-      return this.orderService.markAsPaid(orderId);
+      const result = await this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'PAID' },
+      });
+
+      return result;
     }
   }
 }

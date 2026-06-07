@@ -1,17 +1,13 @@
-import { Controller, Post, Body, Req } from '@nestjs/common';
+import { Controller, Post, Req } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 
 @Controller('payment')
 export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
-  @Post('checkout')
-  create(@Body('orderId') orderId: string) {
-    return this.paymentService.createCheckout(orderId);
-  }
-
   @Post('webhook')
-  webhook(@Req() req: Request) {
-    return this.paymentService.handleWebhook(req.body);
+  async webhook(@Req() req: any) {
+    await this.paymentService.handleWebhook(req.body);
+    return { received: true };
   }
 }

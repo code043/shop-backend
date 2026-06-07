@@ -65,7 +65,14 @@ export class OrderService {
       return createdOrder;
     });
 
-    return order;
+    return this.prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        items: {
+          include: { product: true },
+        },
+      },
+    });
   }
 
   async findAll() {
@@ -79,11 +86,10 @@ export class OrderService {
       },
     });
   }
-  async findOne(orderId: string, userId: string) {
+  async findOne(orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: {
         id: orderId,
-        userId,
       },
       include: {
         items: {
